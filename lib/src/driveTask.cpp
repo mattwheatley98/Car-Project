@@ -2,8 +2,8 @@
 // Created by matt on 4/17/23.
 //
 
-#include "driveTask.h"
 #include <Arduino.h>
+#include "driveTask.h"
 #include <esp_now.h>
 #define BACK_LEFT_PIN 13
 #define BACK_LEFT_MOTOR1 12
@@ -74,6 +74,16 @@ void driveTask(void *parameter) {
 
     while (1) {
         //Loops and using PWM, actuates the DC motors based on the received controller values
+        if (xSemaphoreTake(frontBackObjectDetectionHandle, 0) == pdTRUE) {
+            strcpy(savedValue.y, "1850");
+            Serial.println("Forward and backward block!");
+        } else if (xSemaphoreTake(frontObjectDetectionHandle, 0) == pdTRUE) {
+            strcpy(savedValue.y, "4095");
+            Serial.println("Forward block!");
+        } else if (xSemaphoreTake(backObjectDetectionHandle, 0) == pdTRUE) {
+            strcpy(savedValue.y, "0");
+            Serial.println("Backward block!");
+        }
         if (atoi(savedValue.x) <= 1850 && atoi(savedValue.y) <= 1800) {
             //Forward left... duty cycle is dependent on a "flipped" 10-bit y value (joystick up)
             dutyCycle = (atoi(savedValue.y) - 4095) / 16 * -1;
@@ -169,8 +179,8 @@ void driveTask(void *parameter) {
 //Callback function for when data is received from the controller
 void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int size) {
     memcpy(&savedValue, incomingData, sizeof(savedValue));
-    Serial.print("Saved value X: ");
-    Serial.print(savedValue.x);
-    Serial.print(" Saved value Y: ");
-    Serial.println(savedValue.y);
+    //Serial.print("Saved value X: ");
+    //Serial.print(savedValue.x);
+    //Serial.print(" Saved value Y: ");
+    //Serial.println(savedValue.y);
 }
