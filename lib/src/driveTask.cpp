@@ -17,6 +17,7 @@
 #define FRONT_RIGHT_PIN 5
 #define FRONT_RIGHT_MOTOR1 18
 #define FRONT_RIGHT_MOTOR2 19
+#define BUZZ_PIN 27
 
 //Struct to format received controller data
 typedef struct structMessage {
@@ -73,16 +74,34 @@ void driveTask(void *parameter) {
     ledcAttachPin(FRONT_RIGHT_PIN, pwmChannel);
 
     while (1) {
+        //Deferred interrupt from shock detection ISR
+        if (xSemaphoreTake(interruptDriveHandle, 0) == pdTRUE) {
+            //Eliminate lingering polarity in the DC motors before the interrupt
+            digitalWrite(BACK_LEFT_MOTOR1, LOW);
+            digitalWrite(BACK_LEFT_MOTOR2, LOW);
+            digitalWrite(BACK_RIGHT_MOTOR1, LOW);
+            digitalWrite(BACK_RIGHT_MOTOR2, LOW);
+            digitalWrite(FRONT_LEFT_MOTOR1, LOW);
+            digitalWrite(FRONT_LEFT_MOTOR2, LOW); //Turn off front left (HIGH for forward)
+            digitalWrite(FRONT_RIGHT_MOTOR1, LOW);
+            digitalWrite(FRONT_RIGHT_MOTOR2, LOW);
+            for (int i = 0; i < 4; ++i) {
+                digitalWrite(BUZZ_PIN, HIGH);
+                vTaskDelay(125 / portTICK_PERIOD_MS);
+                digitalWrite(BUZZ_PIN, LOW);
+                vTaskDelay(125);
+            }
+        } else vTaskDelay(10 / portTICK_PERIOD_MS); //Delay to avoid watchdog
         //Loops and using PWM, actuates the DC motors based on the received controller values
         if (xSemaphoreTake(frontBackObjectDetectionHandle, 0) == pdTRUE) {
             strcpy(savedValue.y, "1850");
-            Serial.println("Forward and backward block!");
+            //Serial.println("Forward and backward block!");
         } else if (xSemaphoreTake(frontObjectDetectionHandle, 0) == pdTRUE) {
             strcpy(savedValue.y, "4095");
-            Serial.println("Forward block!");
+            //Serial.println("Forward block!");
         } else if (xSemaphoreTake(backObjectDetectionHandle, 0) == pdTRUE) {
             strcpy(savedValue.y, "0");
-            Serial.println("Backward block!");
+            //Serial.println("Backward block!");
         }
         if (atoi(savedValue.x) <= 1850 && atoi(savedValue.y) <= 1800) {
             //Forward left... duty cycle is dependent on a "flipped" 10-bit y value (joystick up)

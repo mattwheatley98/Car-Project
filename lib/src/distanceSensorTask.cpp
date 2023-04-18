@@ -22,19 +22,26 @@ void objectDetectionTask(void *parameter) {
     NewPing backSonar(BACK_TRIGGER_PIN, BACK_ECHO_PIN, detectionRange);
     pinMode(BUZZ_PIN, OUTPUT);
     while (1) {
-        //Delay to avoid watchdog
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        //Deferred interrupt from shock detection ISR
+        if (xSemaphoreTake(interruptObjectDetectionHandle, 0) == pdTRUE) {
+            for (int i = 0; i < 4; ++i) {
+                digitalWrite(BUZZ_PIN, HIGH);
+                vTaskDelay(125 / portTICK_PERIOD_MS);
+                digitalWrite(BUZZ_PIN, LOW);
+                vTaskDelay(125);
+            }
+        } else vTaskDelay(10 / portTICK_PERIOD_MS); //Delay to avoid watchdog
         //Buzz and signal for when both sonars are triggered
         if ((frontSonar.ping_cm() <= 15 && frontSonar.ping_cm() != 0) && (backSonar.ping_cm() <= 15 && backSonar.ping_cm() != 0)) {
-            digitalWrite(BUZZ_PIN, HIGH);
+            //digitalWrite(BUZZ_PIN, HIGH);
             xSemaphoreGive(frontBackObjectDetectionHandle);
             //Buzz and signal for when front sonar is triggered
         } else if (frontSonar.ping_cm() <= 15 && frontSonar.ping_cm() != 0) {
-            digitalWrite(BUZZ_PIN, HIGH);
+            //digitalWrite(BUZZ_PIN, HIGH);
             xSemaphoreGive(frontObjectDetectionHandle);
             //Buzz and signal for when back sonar is triggered
         } else if (backSonar.ping_cm() <= 15 && backSonar.ping_cm() != 0) {
-            digitalWrite(BUZZ_PIN, HIGH);
+            //digitalWrite(BUZZ_PIN, HIGH);
             xSemaphoreGive(backObjectDetectionHandle);
         } else {
             digitalWrite(BUZZ_PIN, LOW);
