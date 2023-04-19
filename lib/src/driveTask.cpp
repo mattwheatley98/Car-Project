@@ -21,12 +21,16 @@
 
 //Struct to format received controller data
 typedef struct structMessage {
-    char x[32];
-    char y[32];
+    char x[16];
+    char y[16];
+    char toggle[8];
 } structMessage;
 
 //Initialize an instance of structMessage
 structMessage savedValue;
+
+//Boolean that reflects safety override status (true means safety features are disabled)
+boolean toggleStatus;
 
 //Constants for controlling PWM output
 const int freq = 30000;
@@ -74,8 +78,8 @@ void driveTask(void *parameter) {
     ledcAttachPin(FRONT_RIGHT_PIN, pwmChannel);
 
     while (1) {
-        //Deferred interrupt from shock detection ISR
-        if (xSemaphoreTake(interruptDriveHandle, 0) == pdTRUE) {
+        //Deferred interrupt from shock detection ISR--WILL NOT WORK IF OVERRIDE IS TOGGLED ON/TRUE!
+        if (xSemaphoreTake(interruptDriveHandle, 0) == pdTRUE && !toggleStatus) {
             //Eliminate lingering polarity in the DC motors before the interrupt
             digitalWrite(BACK_LEFT_MOTOR1, LOW);
             digitalWrite(BACK_LEFT_MOTOR2, LOW);
@@ -192,6 +196,11 @@ void driveTask(void *parameter) {
             digitalWrite(FRONT_RIGHT_MOTOR1, LOW);
             digitalWrite(FRONT_RIGHT_MOTOR2, LOW);
         }
+        if (strcmp(savedValue.toggle, "0") == 0) {
+            toggleStatus = false;
+        } else if (strcmp(savedValue.toggle, "1") == 0) {
+            toggleStatus = true;
+        }
     }
 }
 
@@ -201,5 +210,10 @@ void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int size) {
     //Serial.print("Saved value X: ");
     //Serial.print(savedValue.x);
     //Serial.print(" Saved value Y: ");
-    //Serial.println(savedValue.y);
+    //Serial.print(savedValue.y);
+    //Serial.print(" RECEIVED Toggle: ");
+    //Serial.println(savedValue.toggle);
+    //Serial.print(" Toggle STATUS: ");
+    //Serial.println(toggleStatus);
+
 }

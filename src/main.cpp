@@ -26,6 +26,7 @@ void setup() {
     Serial.begin(9600);
     WiFi.mode(WIFI_STA);
 
+    //Pin for the shock sensor
     pinMode(26, INPUT);
 
     //Turn the object detection semaphores into one queue?
@@ -61,6 +62,7 @@ void setup() {
 }
 
 void loop() {
+    //Shock sensor loop
     if (digitalRead(26) == LOW) {
         timerAlarmEnable(interruptTimer);
     }
