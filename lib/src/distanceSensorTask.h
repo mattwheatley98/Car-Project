@@ -2,10 +2,7 @@
 // Created by matt on 4/17/23.
 //
 
-#ifndef CARPROJECT_DISTANCESENSORTASK_H
-#define CARPROJECT_DISTANCESENSORTASK_H
-
-#endif //CARPROJECT_DISTANCESENSORTASK_H
+#pragma once
 
 void objectDetectionTask(void *parameter);
 extern SemaphoreHandle_t frontBackObjectDetectionHandle;
